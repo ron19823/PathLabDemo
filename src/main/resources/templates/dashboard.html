@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .dashboard-container {
+            text-align: center;
+        }
+        .logout-form {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Welcome to your Dashboard</h1>
+        <p>This is your main application area after a successful login.</p>
+
+        <!-- Logout form that posts to the Spring Security /logout endpoint -->
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+</body>
+</html>
