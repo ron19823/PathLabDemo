@@ -29,6 +29,136 @@
         <form class="logout-form" th:action="@{/logout}" method="post">
             <button type="submit">Logout</button>
         </form>
+
+        <h2>Patient Registration</h2>
+        <form id="patientForm">
+          <label>
+            Name: <input type="text" id="name" required>
+          </label>
+          <label>
+            Age: <input type="number" id="age" required>
+          </label>
+          <label>
+            Blood Group: <input type="text" id="bloodGroup" required>
+          </label>
+          <label>
+            ID Number: <input type="text" id="idNumber" required>
+          </label>
+          <button type="submit">Add Patient</button>
+        </form>
+
+        <h3>Patients</h3>
+        <table border="1">
+          <thead>
+            <tr>
+              <th>Name</th><th>Age</th><th>Blood Group</th><th>ID Number</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="patientsTable"></tbody>
+        </table>
     </div>
+
+    <script>
+    let db;
+    const dbName = "PathLabDB";
+    const storeName = "patients";
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = function(event) {
+          db = event.target.result;
+          if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+          }
+        };
+        request.onsuccess = function(event) {
+          db = event.target.result;
+          resolve(db);
+        };
+        request.onerror = function(event) {
+          reject(event.target.errorCode);
+        };
+      });
+    }
+
+    function addPatient(patient) {
+      const tx = db.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      store.add(patient);
+      tx.oncomplete = refreshTable;
+    }
+
+    function getAllPatients() {
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+      });
+    }
+
+    function deletePatient(id) {
+      const tx = db.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      store.delete(id);
+      tx.oncomplete = refreshTable;
+    }
+
+    function updatePatient(patient) {
+      const tx = db.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      store.put(patient);
+      tx.oncomplete = refreshTable;
+    }
+
+    async function refreshTable() {
+      const patients = await getAllPatients();
+      const table = document.getElementById("patientsTable");
+      table.innerHTML = "";
+      patients.forEach(patient => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><input value="${patient.name}" data-id="${patient.id}" data-field="name"></td>
+          <td><input value="${patient.age}" data-id="${patient.id}" data-field="age" type="number"></td>
+          <td><input value="${patient.bloodGroup}" data-id="${patient.id}" data-field="bloodGroup"></td>
+          <td><input value="${patient.idNumber}" data-id="${patient.id}" data-field="idNumber"></td>
+          <td>
+            <button onclick="deletePatient(${patient.id})">Delete</button>
+            <button onclick="saveEdit(${patient.id})">Save</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    window.saveEdit = function(id) {
+      const inputs = document.querySelectorAll(`input[data-id='${id}']`);
+      const patient = { id };
+      inputs.forEach(input => {
+        patient[input.dataset.field] = input.value;
+      });
+      updatePatient(patient);
+    };
+
+    window.deletePatient = deletePatient;
+
+    document.addEventListener("DOMContentLoaded", async function() {
+      await openDB();
+      refreshTable();
+
+      document.getElementById("patientForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const patient = {
+          name: document.getElementById("name").value,
+          age: document.getElementById("age").value,
+          bloodGroup: document.getElementById("bloodGroup").value,
+          idNumber: document.getElementById("idNumber").value
+        };
+        addPatient(patient);
+        this.reset();
+      });
+    });
+    </script>
 </body>
 </html>
