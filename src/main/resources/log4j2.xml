@@ -4,18 +4,13 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
         </Console>
-        <File name="File" fileName="logs/pathlab.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
-        </File>
     </Appenders>
     <Loggers>
         <Root level="info">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
         </Root>
         <Logger name="com.lab.demo" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
         </Logger>
     </Loggers>
 </Configuration>

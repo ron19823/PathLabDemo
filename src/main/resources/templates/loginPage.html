@@ -9,13 +9,40 @@
 
 <div th:if="${errorMsg}" class="alert alert-danger" th:text="${errorMsg}"></div>
 
-<form th:action="@{/login-check}" method="post">
+<form th:action="@{/login-check}" method="post" id="loginForm">
+    <input type="hidden" name="latitude" id="latitude" />
+    <input type="hidden" name="longitude" id="longitude" />
     <label>Username:</label>
     <input type="text" name="username" /><br/>
     <label>Password:</label>
     <input type="password" name="password" /><br/>
-    <button type="submit">Login</button>
+    <button type="submit" id="loginButton">Login</button>
 </form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const loginButton = document.getElementById("loginButton");
+        const latitudeInput = document.getElementById("latitude");
+        const longitudeInput = document.getElementById("longitude");
+        const loginForm = document.getElementById("loginForm");
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                latitudeInput.value = position.coords.latitude;
+                longitudeInput.value = position.coords.longitude;
+            }, function(error) {
+                console.error("Geolocation error: ", error);
+                // Disable login if location is not available
+                loginButton.disabled = true;
+                alert("Unable to retrieve your location. Please enable location services to log in.");
+            });
+        } else {
+            console.error("Geolocation is not supported by this browser.");
+            loginButton.disabled = true;
+            alert("Geolocation is not supported by your browser.");
+        }
+    });
+</script>
 </body>
 </html>
 

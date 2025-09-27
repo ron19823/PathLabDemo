@@ -22,6 +22,9 @@ public class LoginController {
         if ("device".equals(error)) {
             log.warn("Login attempt from disallowed device.");
             model.addAttribute("errorMsg", "Login from this device is not allowed.");
+        } else if ("location".equals(error)) {
+            log.warn("Login attempt from disallowed location.");
+            model.addAttribute("errorMsg", "Login from this location is not allowed.");
         } else if (error != null) {
             log.warn("Login attempt with invalid credentials.");
             model.addAttribute("errorMsg", "Invalid username or password.");
@@ -31,15 +34,22 @@ public class LoginController {
     }
 
     @PostMapping("/login-check")
-    public String login(jakarta.servlet.http.HttpServletRequest request) {
+    public String login(@RequestParam double latitude, @RequestParam double longitude, jakarta.servlet.http.HttpServletRequest request) {
         String userAgent = request.getHeader("User-Agent");
-        log.info("POST /login-check called. User-Agent: {}", userAgent);
+        log.info("POST /login-check called. User-Agent: {}, Lat: {}, Long: {}", userAgent, latitude, longitude);
 
         if (!isDesktop(userAgent)) {
             log.warn("Non-desktop device tried to login. Redirecting to /error=device");
             return "redirect:/error=device";
         }
-        log.info("Desktop device login successful. Redirecting to /dashboard");
+
+        // New geofencing check: Verify if location is within allowed polygon
+        if (!isWithinAllowedPolygon(latitude, longitude)) {
+            log.warn("Login attempt from disallowed location: Lat={}, Long={}. Redirecting to /error=location", latitude, longitude);
+            return "redirect:/error=location";
+        }
+
+        log.info("Login successful from allowed location. Redirecting to /dashboard");
         return "redirect:/dashboard";
     }
 
@@ -56,5 +66,17 @@ public class LoginController {
             return "Mobile/Tablet";
         }
         return "Desktop";
+    }
+
+
+    private boolean isWithinAllowedPolygon(double latitude, double longitude) {
+        // Define a sample allowed polygon (e.g., a rectangular area for demonstration)
+        // In a real scenario, load this from configuration or a database
+        double minLat = 40.7128;  // Example: NYC area
+        double maxLat = 40.7589;
+        double minLong = -74.0060;
+        double maxLong = -73.9352;
+        log.info("LAt:{}, Long:{}",latitude,longitude);
+        return latitude >= minLat && latitude <= maxLat && longitude >= minLong && longitude <= maxLong;
     }
 }
