@@ -29,8 +29,16 @@ public class SecurityConfig {
                 .password("{noop}password") // {noop} = no encoding
                 .roles("USER")
                 .build();
-        log.info("Created user 'user' with role 'USER'");
-        return new InMemoryUserDetailsManager(user);
+        UserDetails designer = User.withUsername("designer")
+                .password("{noop}password")
+                .roles("USER", "DESIGNER")
+                .build();
+        UserDetails admin = User.withUsername("admin")
+                .password("{noop}password")
+                .roles("USER", "ADMIN")
+                .build();
+        log.info("Created users: 'user'(USER), 'designer'(USER,DESIGNER), 'admin'(USER,ADMIN)");
+        return new InMemoryUserDetailsManager(user, designer, admin);
     }
 
     @Bean

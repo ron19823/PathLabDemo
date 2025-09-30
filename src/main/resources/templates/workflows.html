@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Workflow Management</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .workflow-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafafa;
+        }
+        .workflow-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .workflow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .workflow-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .workflow-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .workflow-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .form-field-list {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .form-field-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .field-info {
+            flex: 1;
+        }
+        .field-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .field-type {
+            color: #666;
+            font-size: 12px;
+        }
+        .field-required {
+            color: #e74c3c;
+            font-size: 12px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        .required {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Workflow Management</h1>
+        <p>Manage patient registration workflows for <span th:text="${hospitalCode}"></span></p>
+        <a href="/path-lab/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Workflows</h2>
+            <button class="btn" onclick="openWorkflowModal()">Add New Workflow</button>
+        </div>
+
+        <div th:each="workflow : ${workflows}" class="workflow-card">
+            <div class="workflow-header">
+                <div class="workflow-title" th:text="${workflow.name}"></div>
+                <div class="workflow-actions">
+                    <button class="btn btn-secondary" th:onclick="'editWorkflow(' + ${workflow.id} + ')'">Edit</button>
+                    <button class="btn" th:onclick="'manageFields(' + ${workflow.id} + ')'">Manage Fields</button>
+                    <button class="btn btn-danger" th:onclick="'deleteWorkflow(' + ${workflow.id} + ')'">Delete</button>
+                </div>
+            </div>
+            <div class="workflow-description" th:text="${workflow.description}"></div>
+            <div class="form-field-list">
+                <h4>Form Fields:</h4>
+                <div th:each="field : ${workflow.formFields}" class="form-field-item">
+                    <div class="field-info">
+                        <div class="field-name" th:text="${field.displayName}"></div>
+                        <div class="field-type" th:text="${field.fieldType}"></div>
+                        <div class="field-required" th:if="${field.isRequired}">Required</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" 
+                                th:onclick="'editField(' + ${field.id} + ')'">Edit</button>
+                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" 
+                                th:onclick="'deleteField(' + ${field.id} + ')'">Delete</button>
+                    </div>
+                </div>
+                <button class="btn" style="margin-top: 10px;" th:onclick="'addField(' + ${workflow.id} + ')'">Add Field</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Modal -->
+    <div id="workflowModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeWorkflowModal()">&times;</span>
+            <h2 id="workflowModalTitle">Add New Workflow</h2>
+            <form id="workflowForm">
+                <div class="form-group">
+                    <label for="workflowName">Workflow Name <span class="required">*</span></label>
+                    <input type="text" id="workflowName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="workflowDescription">Description</label>
+                    <textarea id="workflowDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="workflowStepOrder">Step Order <span class="required">*</span></label>
+                    <input type="number" id="workflowStepOrder" name="stepOrder" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="workflowIsActive" name="isActive" checked>
+                        Active
+                    </label>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeWorkflowModal()">Cancel</button>
+                    <button type="submit" class="btn">Save Workflow</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Field Modal -->
+    <div id="fieldModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeFieldModal()">&times;</span>
+            <h2 id="fieldModalTitle">Add New Field</h2>
+            <form id="fieldForm">
+                <div class="form-group">
+                    <label for="fieldName">Field Name <span class="required">*</span></label>
+                    <input type="text" id="fieldName" name="fieldName" required placeholder="e.g., name, aadhar, phone">
+                </div>
+                <div class="form-group">
+                    <label for="fieldDisplayName">Display Name <span class="required">*</span></label>
+                    <input type="text" id="fieldDisplayName" name="displayName" required placeholder="e.g., Full Name, Aadhar Number">
+                </div>
+                <div class="form-group">
+                    <label for="fieldType">Field Type <span class="required">*</span></label>
+                    <select id="fieldType" name="fieldType" required>
+                        <option value="">Select field type</option>
+                        <option value="TEXT">Text</option>
+                        <option value="NUMBER">Number</option>
+                        <option value="EMAIL">Email</option>
+                        <option value="PHONE">Phone</option>
+                        <option value="DATE">Date</option>
+                        <option value="SELECT">Select</option>
+                        <option value="TEXTAREA">Textarea</option>
+                        <option value="PASSWORD">Password</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fieldOrder">Field Order <span class="required">*</span></label>
+                    <input type="number" id="fieldOrder" name="fieldOrder" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="fieldPlaceholder">Placeholder</label>
+                    <input type="text" id="fieldPlaceholder" name="placeholder">
+                </div>
+                <div class="form-group">
+                    <label for="fieldHelpText">Help Text</label>
+                    <textarea id="fieldHelpText" name="helpText" rows="2"></textarea>
+                </div>
+                <div class="form-group" id="optionsGroup" style="display: none;">
+                    <label for="fieldOptions">Options (comma-separated)</label>
+                    <input type="text" id="fieldOptions" name="options" placeholder="e.g., Option 1, Option 2, Option 3">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="fieldIsRequired" name="isRequired">
+                        Required Field
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="fieldIsActive" name="isActive" checked>
+                        Active
+                    </label>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeFieldModal()">Cancel</button>
+                    <button type="submit" class="btn">Save Field</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    let currentWorkflowId = null;
+    let currentFieldId = null;
+
+    // Workflow Management
+    function openWorkflowModal() {
+        document.getElementById('workflowModalTitle').textContent = 'Add New Workflow';
+        document.getElementById('workflowForm').reset();
+        document.getElementById('workflowModal').style.display = 'block';
+        currentWorkflowId = null;
+    }
+
+    function closeWorkflowModal() {
+        document.getElementById('workflowModal').style.display = 'none';
+    }
+
+    function editWorkflow(workflowId) {
+        // In a real application, you would fetch the workflow data and populate the form
+        document.getElementById('workflowModalTitle').textContent = 'Edit Workflow';
+        document.getElementById('workflowModal').style.display = 'block';
+        currentWorkflowId = workflowId;
+        // Populate form with existing data
+    }
+
+    function deleteWorkflow(workflowId) {
+        if (confirm('Are you sure you want to delete this workflow?')) {
+            // In a real application, you would make an API call to delete the workflow
+            console.log('Deleting workflow:', workflowId);
+            showMessage('Workflow deleted successfully', 'success');
+        }
+    }
+
+    // Field Management
+    function openFieldModal(workflowId) {
+        document.getElementById('fieldModalTitle').textContent = 'Add New Field';
+        document.getElementById('fieldForm').reset();
+        document.getElementById('fieldModal').style.display = 'block';
+        currentWorkflowId = workflowId;
+        currentFieldId = null;
+    }
+
+    function closeFieldModal() {
+        document.getElementById('fieldModal').style.display = 'none';
+    }
+
+    function addField(workflowId) {
+        openFieldModal(workflowId);
+    }
+
+    function editField(fieldId) {
+        // In a real application, you would fetch the field data and populate the form
+        document.getElementById('fieldModalTitle').textContent = 'Edit Field';
+        document.getElementById('fieldModal').style.display = 'block';
+        currentFieldId = fieldId;
+        // Populate form with existing data
+    }
+
+    function deleteField(fieldId) {
+        if (confirm('Are you sure you want to delete this field?')) {
+            // In a real application, you would make an API call to delete the field
+            console.log('Deleting field:', fieldId);
+            showMessage('Field deleted successfully', 'success');
+        }
+    }
+
+    function manageFields(workflowId) {
+        // Navigate to field management page or open field management modal
+        console.log('Managing fields for workflow:', workflowId);
+        showMessage('Field management feature coming soon', 'info');
+    }
+
+    // Form handling
+    document.getElementById('workflowForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        console.log('Saving workflow:', data);
+        showMessage('Workflow saved successfully', 'success');
+        closeWorkflowModal();
+    });
+
+    document.getElementById('fieldForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        console.log('Saving field:', data);
+        showMessage('Field saved successfully', 'success');
+        closeFieldModal();
+    });
+
+    // Show/hide options field based on field type
+    document.getElementById('fieldType').addEventListener('change', function() {
+        const optionsGroup = document.getElementById('optionsGroup');
+        if (this.value === 'SELECT') {
+            optionsGroup.style.display = 'block';
+        } else {
+            optionsGroup.style.display = 'none';
+        }
+    });
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        const workflowModal = document.getElementById('workflowModal');
+        const fieldModal = document.getElementById('fieldModal');
+        
+        if (event.target === workflowModal) {
+            closeWorkflowModal();
+        }
+        if (event.target === fieldModal) {
+            closeFieldModal();
+        }
+    }
+
+    function showMessage(message, type) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            max-width: 300px;
+        `;
+        
+        switch(type) {
+            case 'success':
+                notification.style.backgroundColor = '#28a745';
+                break;
+            case 'error':
+                notification.style.backgroundColor = '#dc3545';
+                break;
+            case 'info':
+                notification.style.backgroundColor = '#17a2b8';
+                break;
+            default:
+                notification.style.backgroundColor = '#6c757d';
+        }
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+    </script>
+</body>
+</html>
+

@@ -1,164 +1,748 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-    <title>Dashboard</title>
+    <title>PathLab Dashboard</title>
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-        .dashboard-container {
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .hospital-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .workflow-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .workflow-step {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+
+        .workflow-step.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .form-field {
+            margin-bottom: 15px;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .hospital-selection {
             text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
+        .hospital-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            width: 300px;
+            text-align: left;
+        }
+
+        .hospital-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .hospital-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .hospital-description {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .hospital-location {
+            color: #888;
+            font-size: 14px;
+        }
+
         .logout-form {
+            float: right;
+        }
+
+        .patients-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
         }
+
+        .patients-table th,
+        .patients-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .patients-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .patients-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 5px;
+        }
+
+        .step-dot.active {
+            background: #667eea;
+        }
+
+        .step-dot.completed {
+            background: #28a745;
+        }
     </style>
+
 </head>
+
 <body>
-    <div class="dashboard-container">
-        <h1>Welcome to your Dashboard</h1>
-        <p>This is your main application area after a successful login.</p>
-
-        <!-- Logout form that posts to the Spring Security /logout endpoint -->
+    <div class="header">
+        <h1>PathLab Management System</h1>
+        <p>Multi-Hospital Patient Registration & Management</p>
         <form class="logout-form" th:action="@{/logout}" method="post">
-            <button type="submit">Logout</button>
+            <button type="submit" class="btn btn-secondary">Logout</button>
         </form>
+        <div th:if="${isHospitalSpecific}" th:remove="tag">
+            <button type="button" class="btn" th:if="${canDesign}" onclick="openBuilder()">Open Form Builder</button>
+        </div>
+    </div>
 
-        <h2>Patient Registration</h2>
-        <form id="patientForm">
-          <label>
-            Name: <input type="text" id="name" required>
-          </label>
-          <label>
-            Age: <input type="number" id="age" required>
-          </label>
-          <label>
-            Blood Group: <input type="text" id="bloodGroup" required>
-          </label>
-          <label>
-            ID Number: <input type="text" id="idNumber" required>
-          </label>
-          <button type="submit">Add Patient</button>
-        </form>
+    <!-- Hospital Selection View -->
+    <div th:if="${!isHospitalSpecific}" class="hospital-selection">
+        <h2>Select Hospital</h2>
+        <p>Choose a hospital to access its patient registration system:</p>
+        <div th:each="hospital : ${hospitals}">
+            <div class="hospital-card" th:attr="onclick=|window.location.href='/path-lab/hospital/${hospital.code}'|">
+                <div class="hospital-name" th:text="${hospital.name}"></div>
+                <div class="hospital-description" th:text="${hospital.description}"></div>
+                <div class="hospital-location" th:text="${hospital.city + ', ' + hospital.state}"></div>
+            </div>
+        </div>
+    </div>
 
-        <h3>Patients</h3>
-        <table border="1">
-          <thead>
-            <tr>
-              <th>Name</th><th>Age</th><th>Blood Group</th><th>ID Number</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="patientsTable"></tbody>
-        </table>
+    <!-- Hospital-Specific Dashboard -->
+    <div th:if="${isHospitalSpecific}">
+        <div class="hospital-info">
+            <h2 th:text="${hospital.name}"></h2>
+            <p th:text="${hospital.description}"></p>
+            <p><strong>Location:</strong> <span
+                    th:text="${hospital.address + ', ' + hospital.city + ', ' + hospital.state}"></span></p>
+            <p><strong>Contact:</strong> <span th:text="${hospital.phone}"></span> | <span
+                    th:text="${hospital.email}"></span></p>
+        </div>
+
+        <!-- Dynamic Workflow Forms -->
+        <div class="workflow-container" th:each="workflow : ${workflows}">
+            <h3 th:text="${workflow.name}"></h3>
+            <p th:text="${workflow.description}"></p>
+            <div class="workflow-step" th:id="'workflow-' + ${workflow.id}">
+                <form th:id="'form-' + ${workflow.id}" class="workflow-form">
+                    <input type="hidden" th:id="id" th:name="id">
+
+                    <div th:each="field : ${workflow.formFields}" class="form-field">
+                        <label th:for="${field.fieldName}" th:text="${field.displayName}">
+                            <span th:if="${field.isRequired}" class="required">*</span>
+                        </label>
+                        <!-- <input type="hidden" th:name="${field.fieldName}" th:value="${field.fieldName}"> -->
+                        <!-- Inputs -->
+                        <input
+                            th:if="${field.fieldType.name() == 'TEXT' or field.fieldType.name() == 'EMAIL' or field.fieldType.name() == 'PASSWORD'}"
+                            th:type="${field.fieldType.name() == 'EMAIL' ? 'email' : (field.fieldType.name() == 'PASSWORD' ? 'password' : 'text')}"
+                            th:id="${field.fieldName}" th:name="${field.fieldName}"
+                            th:placeholder="${field.placeholder}" th:required="${field.isRequired}">
+
+                        <input th:if="${field.fieldType.name() == 'NUMBER'}" type="number" th:id="${field.fieldName}"
+                            th:name="${field.fieldName}" th:placeholder="${field.placeholder}"
+                            th:required="${field.isRequired}">
+
+                        <input th:if="${field.fieldType.name() == 'PHONE'}" type="tel" th:id="${field.fieldName}"
+                            th:name="${field.fieldName}" th:placeholder="${field.placeholder}"
+                            th:required="${field.isRequired}">
+
+                        <input th:if="${field.fieldType.name() == 'DATE'}" type="date" th:id="${field.fieldName}"
+                            th:name="${field.fieldName}" th:required="${field.isRequired}">
+
+                        <select th:if="${field.fieldType.name() == 'SELECT'}" th:id="${field.fieldName}"
+                            th:name="${field.fieldName}" th:required="${field.isRequired}">
+                            <option value="">Select an option</option>
+                            <option th:each="option : ${#strings.arraySplit(field.options, ',')}"
+                                th:value="${#strings.trim(option)}" th:text="${#strings.trim(option)}"></option>
+                        </select>
+
+                        <textarea th:if="${field.fieldType.name() == 'TEXTAREA'}" th:id="${field.fieldName}"
+                            th:name="${field.fieldName}" th:placeholder="${field.placeholder}"
+                            th:required="${field.isRequired}" rows="4"></textarea>
+
+                        <div th:if="${field.helpText}" class="help-text" th:text="${field.helpText}"></div>
+                    </div>
+
+                    <div class="step-navigation">
+                        <button type="submit" class="btn">Save & Continue</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Registered Patients -->
+        <div class="workflow-container">
+            <h3>Registered Patients</h3>
+            <table class="patients-table">
+                <thead>
+                    <tr>
+                        <th>Patient ID</th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Blood Group</th>
+                        <th>ID Number</th>
+                        <th>Registration Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="patientsTable"></tbody>
+            </table>
+        </div>
+
+        <!-- Patient Details Panel -->
+        <div id="patientDetailsPanel" class="workflow-container" style="display:none;">
+            <h3>Patient Details</h3>
+            <div id="patientDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Builder Modal -->
+    <div id="builderModal" style="display:none; position:fixed; inset:0; background: rgba(0,0,0,0.4); z-index:2000;">
+        <div
+            style="background:white; width: 800px; max-width:95%; margin: 60px auto; padding:20px; border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,0.2);">
+            <h3>Create Workflow Step</h3>
+            <div class="form-field">
+                <label>Step Name</label>
+                <input id="wfName" type="text" placeholder="e.g. Patient Personal Details">
+            </div>
+            <div class="form-field">
+                <label>Step Description</label>
+                <input id="wfDesc" type="text" placeholder="Short description of this step">
+            </div>
+            <div class="form-field">
+                <label>Step Order</label>
+                <input id="wfOrder" type="number" value="1" min="1">
+            </div>
+            <hr>
+            <h4>Fields</h4>
+            <div id="fieldsContainer"></div>
+            <button class="btn" type="button" onclick="addFieldRow()">Add Field</button>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-secondary" type="button" onclick="closeBuilder()">Cancel</button>
+                <button class="btn" type="button" onclick="saveWorkflow()">Save</button>
+            </div>
+        </div>
     </div>
 
     <script>
-    let db;
-    const dbName = "PathLabDB";
-    const storeName = "patients";
+        let currentIndex = 0;
+        let totalSteps = 0;
+        let workflowSteps = [];
+        let formData = {}; // ✅ single global formData
+        let db;
 
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(dbName, 1);
-        request.onupgradeneeded = function(event) {
-          db = event.target.result;
-          if (!db.objectStoreNames.contains(storeName)) {
-            db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
-          }
-        };
-        request.onsuccess = function(event) {
-          db = event.target.result;
-          resolve(db);
-        };
-        request.onerror = function(event) {
-          reject(event.target.errorCode);
-        };
-      });
-    }
 
-    function addPatient(patient) {
-      const tx = db.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      store.add(patient);
-      tx.oncomplete = refreshTable;
-    }
 
-    function getAllPatients() {
-      return new Promise((resolve) => {
-        const tx = db.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result);
-      });
-    }
+        document.addEventListener("DOMContentLoaded", async () => {
 
-    function deletePatient(id) {
-      const tx = db.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      store.delete(id);
-      tx.oncomplete = refreshTable;
-    }
 
-    function updatePatient(patient) {
-      const tx = db.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      store.put(patient);
-      tx.oncomplete = refreshTable;
-    }
-
-    async function refreshTable() {
-      const patients = await getAllPatients();
-      const table = document.getElementById("patientsTable");
-      table.innerHTML = "";
-      patients.forEach(patient => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><input value="${patient.name}" data-id="${patient.id}" data-field="name"></td>
-          <td><input value="${patient.age}" data-id="${patient.id}" data-field="age" type="number"></td>
-          <td><input value="${patient.bloodGroup}" data-id="${patient.id}" data-field="bloodGroup"></td>
-          <td><input value="${patient.idNumber}" data-id="${patient.id}" data-field="idNumber"></td>
-          <td>
-            <button onclick="deletePatient(${patient.id})">Delete</button>
-            <button onclick="saveEdit(${patient.id})">Save</button>
-          </td>
+            await openPatientDB();
+            console.info('db', db);
+            const hospitalDash = document.querySelector('.workflow-container .workflow-step');
+            if (hospitalDash) {
+                initializeHospitalDashboard();
+            }
+        });
+        function initializeHospitalDashboard() {
+            workflowSteps = Array.from(document.querySelectorAll('.workflow-container .workflow-step'));
+            totalSteps = workflowSteps.length;
+            console.info('workflowSteps', workflowSteps);
+            if (workflowSteps.length > 0) {
+                workflowSteps.forEach(step => step.classList.add('active'));
+                // workflowSteps[0].classList.add('active');
+            }
+            setupFormHandlers();
+            loadPatients();
+        }
+        // Builder modal helpers
+        function openBuilder() {
+            document.getElementById('wfName').value = '';
+            document.getElementById('wfDesc').value = '';
+            document.getElementById('wfOrder').value = 1;
+            document.getElementById('fieldsContainer').innerHTML = '';
+            addFieldRow();
+            document.getElementById('builderModal').style.display = 'block';
+        }
+        function closeBuilder() { document.getElementById('builderModal').style.display = 'none'; }
+        function addFieldRow() {
+            const fc = document.getElementById('fieldsContainer');
+            const idx = fc.children.length + 1;
+            const row = document.createElement('div');
+            row.className = 'builder-field-row';
+            row.innerHTML = `
+            <div class="form-field"><label>Display Name</label><input type="text" data-key="displayName"></div>
+            <div class="form-field"><label>Field Name</label><input type="text" data-key="fieldName"></div>
+            <div class="form-field"><label>Type</label>
+                <select data-key="fieldType">
+                    <option value="TEXT">TEXT</option><option value="NUMBER">NUMBER</option>
+                    <option value="EMAIL">EMAIL</option><option value="PHONE">PHONE</option>
+                    <option value="DATE">DATE</option><option value="SELECT">SELECT</option>
+                    <option value="TEXTAREA">TEXTAREA</option><option value="PASSWORD">PASSWORD</option>
+                </select>
+            </div>
+            <div class="form-field"><label>Required</label>
+                <select data-key="isRequired"><option value="true">Yes</option><option value="false" selected>No</option></select>
+            </div>
+            <div class="form-field"><label>Order</label><input type="number" data-key="fieldOrder" value="${idx}" min="1"></div>
+            <div class="form-field"><label>Placeholder</label><input type="text" data-key="placeholder"></div>
+            <div class="form-field"><label>Help Text</label><input type="text" data-key="helpText"></div>
+            <div class="form-field"><label>Options</label><input type="text" data-key="options"></div>
         `;
-        table.appendChild(row);
-      });
-    }
+            fc.appendChild(row);
+        }
+        function setupFormHandlers() {
+            const forms = document.querySelectorAll('.workflow-form');
+            forms.forEach((form, idx) => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    handleFormSubmit(this, idx);
+                });
+            });
+        }
 
-    window.saveEdit = function(id) {
-      const inputs = document.querySelectorAll(`input[data-id='${id}']`);
-      const patient = { id };
-      inputs.forEach(input => {
-        patient[input.dataset.field] = input.value;
-      });
-      updatePatient(patient);
-    };
+        function handleFormSubmit(form, idx) {
+            const formDataObj = new FormData(form);
 
-    window.deletePatient = deletePatient;
+            const data = {};
+            for (let [key, value] of formDataObj.entries()) {
+                console.info('formDataObj key', key, " value :", value);
 
-    document.addEventListener("DOMContentLoaded", async function() {
-      await openDB();
-      refreshTable();
+                data[key] = value;
+            }
 
-      document.getElementById("patientForm").addEventListener("submit", function(e) {
-        e.preventDefault();
-        const patient = {
-          name: document.getElementById("name").value,
-          age: document.getElementById("age").value,
-          bloodGroup: document.getElementById("bloodGroup").value,
-          idNumber: document.getElementById("idNumber").value
-        };
-        addPatient(patient);
-        this.reset();
-      });
-    });
+            // ✅ merge into single global object
+            Object.assign(formData, data);
+
+            showMessage('Form data saved successfully!', 'success');
+
+            if (idx >= totalSteps - 1) {
+                submitFinalData(data);
+            } else {
+                nextStep(idx);
+            }
+        }
+
+        function nextStep(idx) {
+            workflowSteps[idx].classList.remove('active');
+            currentIndex = idx + 1;
+            workflowSteps[currentIndex].classList.add('active');
+        }
+
+        async function submitFinalData(data) {
+            // const id = 'PAT' + Date.now();
+            const id = data.id && data.id.trim() !== '' ? data.id : 'PAT' + Date.now();
+            console.info('submitFinalData formdata:', data, ' id:', id);
+            data.id = id;
+            const patient = {
+                id: id,
+                ...data,
+                registrationDate: new Date().toLocaleDateString()
+            };
+
+            addPatientToTable(patient);
+            try {
+                await savePatientToIndexedDB(patient);
+            } catch (e) {
+                console.error('IndexedDB save failed', e);
+            }
+            showPatientDetails(patient);
+
+            // reset
+            // formData = {};
+            currentIndex = 0;
+            workflowSteps.forEach((step, i) => {
+                step.classList.remove('active');
+                if (i === 0) step.classList.add('active');
+            });
+
+            showMessage('Patient registered successfully!', 'success');
+        }
+
+        function addPatientToTable(patient) {
+            const table = document.getElementById('patientsTable');
+            const row = document.createElement('tr');
+            row.setAttribute('data-id', patient.id);
+            row.innerHTML = `
+            <td>${patient.id}</td>
+            <td>${patient.name || 'N/A'}</td>
+            <td>${patient.age ? patient.age : (patient.dateOfBirth ? calculateAge(patient.dateOfBirth) : 'N/A')}</td>
+            <td>${patient.bloodGroup || 'N/A'}</td>
+            <td>${patient.aadhar || patient.idNumber || 'N/A'}</td>
+            <td>${patient.registrationDate}</td>
+            <td>
+                <button class="btn" onclick="viewPatient('${patient.id}')">View</button>
+                <button class="btn btn-secondary" onclick="editPatient('${patient.id}')">Edit</button>
+                <button class="btn" style="background: #dc3545;" onclick="deletePatient('${patient.id}')">Delete</button>
+            </td>
+        `;
+            table.appendChild(row);
+        }
+
+        function calculateAge(dateOfBirth) {
+            if (!dateOfBirth) return 'N/A';
+            const today = new Date();
+            const birthDate = new Date(dateOfBirth);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        async function loadPatients() {
+            try {
+                const patients = await getAllPatientsFromIndexedDB();
+                console.info('all patients', patients);
+                const table = document.getElementById('patientsTable');
+                table.innerHTML = '';
+                patients.forEach(p => addPatientToTable(p));
+            } catch (e) {
+                console.error('Failed to load patients', e);
+            }
+        }
+
+        async function getAllPatientsFromIndexedDB() {
+            console.info('getAllPatientsFromIndexedDB');
+
+            return new Promise((resolve, reject) => {
+                console.info('db', db);
+                const tx = db.transaction(['patients'], 'readonly');
+                const store = tx.objectStore('patients');
+                console.info('store', store);
+                const req = store.getAll();
+                console.info('req', req);
+                req.onsuccess = e => resolve(e.target.result || []);
+                req.onerror = e => reject(e);
+            });
+        }
+
+        async function viewPatient(id) {
+            if (!db) {
+                console.error('DB not initialized');
+
+            }
+            const tx = db.transaction("patients", "readonly");
+            console.info('tx', tx);
+            const store = tx.objectStore("patients");
+            console.info('store', store);
+            const getReq = store.get(id);
+            console.info('getReq', getReq);
+            getReq.onsuccess = function () {
+                console.info('getReq.onsuccess', id);
+                const patient = getReq.result;
+                console.info('viewPatient patient', patient);
+                if (patient) {
+                    alert(`Patient Details:\n\nName: ${patient.name}\nAge: ${patient.age || calculateAge(patient.dateOfBirth)}\nDOB: ${patient.dateOfBirth || 'N/A'}\nReg Date: ${patient.registrationDate}`);
+                }
+            };
+        }
+        async function editPatient(id) {
+            if (!db) {
+                console.error('DB not initialized');
+
+            }
+            console.info('editPatient', id);
+            const tx = db.transaction("patients", "readonly");
+            const store = tx.objectStore("patients");
+            const getReq = store.get(id);
+            console.info('getReq', getReq);
+            getReq.onsuccess = function () {
+                const patient = getReq.result;
+                console.info('editPatient patient', patient);
+                if (patient) {
+                    const form = document.querySelector("#workflow-1 form");
+                    console.info('form', form);
+                    for (let key in patient) {
+                        if (form.elements[key]) {
+                            console.log("setting key:", key, " value:", patient[key]);
+                            console.info("form ele", form.elements[key]);
+
+                            form.elements[key].value = patient[key];
+                        }
+                    }
+
+                    const hiddenId = form.querySelector("#id");
+                    console.info('hiddenId', hiddenId);
+                    if (hiddenId) hiddenId.value = id;
+                    showMessage("Loaded patient data for editing. Update and resubmit.", "info");
+                }
+            };
+        }
+        async function deletePatient(id) {
+            if (!db) {
+                console.error('DB not initialized');
+
+            }
+            if (confirm(`Delete ${id}?`)) {
+
+                const table = document.getElementById('patientsTable');
+                const rows = table.getElementsByTagName('tr');
+                for (let r of rows) {
+                    if (r.children[0].textContent === id) {
+                        r.remove();
+                        const tx = db.transaction("patients", "readwrite");
+                        const store = tx.objectStore("patients");
+                        store.delete(id);
+
+                        break;
+                    }
+                }
+                showMessage(`Deleted ${id}`, 'success');
+            }
+        }
+
+        function showMessage(msg, type) {
+            const note = document.createElement('div');
+            note.style.cssText = `
+            position: fixed; top: 20px; right: 20px;
+            padding: 15px 20px; border-radius: 4px;
+            color: white; font-weight: bold; z-index: 1000;
+        `;
+            note.style.backgroundColor = type === 'success' ? '#28a745' :
+                type === 'error' ? '#dc3545' :
+                    type === 'info' ? '#17a2b8' : '#6c757d';
+            note.textContent = msg;
+            document.body.appendChild(note);
+            setTimeout(() => note.remove(), 3000);
+        }
+
+        function openPatientDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('PathLabDB', 1);
+
+                req.onupgradeneeded = e => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('patients')) {
+                        db.createObjectStore('patients', { keyPath: 'id' });
+                    }
+                };
+
+                req.onsuccess = e => {
+                    db = e.target.result;  // ✅ assign db here as well
+                    resolve(db);
+                };
+
+                req.onerror = e => reject(e.target.error);
+            });
+        }
+        async function savePatientToIndexedDB(patient) {
+            // Ensure DB is initialized before using it
+
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(['patients'], 'readwrite');
+                tx.objectStore('patients').put(patient);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = e => reject(e);
+            });
+        }
+
+        function showPatientDetails(patient) {
+            const panel = document.getElementById('patientDetailsPanel');
+            const content = document.getElementById('patientDetailsContent');
+            content.innerHTML = `
+            <p><strong>ID:</strong> ${patient.id}</p>
+            <p><strong>Name:</strong> ${patient.name || 'N/A'}</p>
+            <p><strong>Age:</strong> ${patient.age ? patient.age : (patient.dateOfBirth ? calculateAge(patient.dateOfBirth) : 'N/A')}</p>
+            <p><strong>Blood Group:</strong> ${patient.bloodGroup || 'N/A'}</p>
+            <p><strong>ID Number:</strong> ${patient.aadhar || patient.idNumber || 'N/A'}</p>
+            <p><strong>Registered:</strong> ${patient.registrationDate}</p>
+        `;
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+      
+        async function saveWorkflow() {
+            try {
+                const name = document.getElementById('wfName').value.trim();
+                const description = document.getElementById('wfDesc').value.trim();
+                const stepOrder = parseInt(document.getElementById('wfOrder').value, 10) || 1;
+                if (!name) {
+                    showMessage('Step name is required', 'error');
+                    return;
+                } // Collect fields
+                const fields = [];
+                const fc = document.getElementById('fieldsContainer');
+                Array.from(fc.children).forEach((row, idx) => {
+
+                    const get = (key) => row.querySelector(`[data-key="${key}"]`);
+                    const displayName = get('displayName').value.trim();
+                    const fieldName = get('fieldName').value.trim();
+                    const fieldType = get('fieldType').value;
+                    const isRequired = get('isRequired').value === 'true';
+                    const fieldOrder = parseInt(get('fieldOrder').value || (idx + 1), 10);
+                    const placeholder = get('placeholder').value.trim();
+                    const helpText = get('helpText').value.trim();
+                    const options = get('options').value.trim();
+                    if (!displayName || !fieldName)
+                        return; // skip incomplete 
+                    fields.push({ displayName, fieldName, fieldType, isRequired, fieldOrder, placeholder, helpText, options });
+                });
+                const hospitalCodeElem = document.querySelector('[th\\:text="${hospital.name}"]'); // hospital code is in URL: /path-lab/hospital/{code} 
+                const path = window.location.pathname;
+                const code = (path.match(/hospital\/(.*?)$/) || [])[1] || (new URLSearchParams(window.location.search)).get('hospitalCode');
+                const hospitalCode = code || '';
+                const payload = { name, description, stepOrder, isActive: true, formFields: fields };
+                const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+                const headers = { 'Content-Type': 'application/json' };
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+
+                }
+                const res = await fetch(`/path-lab/workflows/hospital/${ hospitalCode }`, {
+                    method: 'POST', headers, body: JSON.stringify(payload)
+                });
+                if (!res.ok)
+                    throw new Error('Failed to save workflow');
+                const created = await res.json();
+                // Optionally call an API to save fields if available; for now we only create step
+                showMessage('Workflow step created', 'success');
+                closeBuilder(); // Refresh page data 
+                window.location.reload();
+            } catch (e) {
+                console.error(e); showMessage('Error saving workflow', 'error');
+            }
+        }
+        // expose globally
+        window.nextStep = nextStep;
+        window.openBuilder = openBuilder;
+        window.closeBuilder = closeBuilder;
+        window.addFieldRow = addFieldRow;
+        window.saveWorkflow = saveWorkflow;
     </script>
 </body>
+
 </html>
